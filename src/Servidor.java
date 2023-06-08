@@ -12,7 +12,6 @@ public class Servidor implements ServerInterface {
     public static final String REGISTRY_IP_DEFAULT = "127.0.0.1";
     private Map<String, PeerInf> peers = new HashMap();
 
-    // AAAAAAAAAA
     public static void main(String[] args) {
         try {
             iniciarServidor();
