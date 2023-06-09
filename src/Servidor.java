@@ -3,6 +3,7 @@ import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.ServerNotActiveException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.*;
 
@@ -48,21 +49,25 @@ public class Servidor implements ServerInterface {
     }
 
     @Override
-    public String join(String nomePeer, List<String> arquivos) throws RemoteException {
-        PeerInf novoPeer = new PeerInf(nomePeer, arquivos);
+    public String join(String nomePeer, String ipPeer, int portPeer, List<String> arquivos) throws RemoteException, ServerNotActiveException {
+        if (peers.containsKey(nomePeer)) {
+            return "JOIN_ERROR: Peer já cadastrado";
+        }
+        PeerInf novoPeer = new PeerInf(nomePeer, ipPeer, portPeer, arquivos);
         peers.put(nomePeer, novoPeer);
+        System.out.println("Peer " + ipPeer + ":" + portPeer + " adicionado com arquivos " + arquivos.toString());
         return "JOIN_OK";
     }
 
     @Override
-    public List<PeerInf> search(String filename) throws RemoteException {
-        List<PeerInf> peersWithFile = new ArrayList<>();
+    public List<String> search(String filename) throws RemoteException {
+        List<String> ipsPeersWithFile = new ArrayList<>();
         for (PeerInf peer : peers.values()) {
             if (peer.getArquivos().contains(filename)) {
-                peersWithFile.add(peer);
+                ipsPeersWithFile.add(peer.peerIp + ":" +  peer.peerPort);
             }
         }
-        return peersWithFile;
+        return ipsPeersWithFile;
     }
 
     @Override
@@ -82,11 +87,17 @@ public class Servidor implements ServerInterface {
 
     public class PeerInf implements Serializable {
         private String nomePeer;
+
+        private String peerIp;
+
+        private int peerPort;
         private List<String> arquivos;
 
-        public PeerInf(String nomePeer, List<String> arquivos) {
+        public PeerInf(String nomePeer, String peerIp, int peerPort, List<String> arquivos) {
             this.nomePeer = nomePeer;
             this.arquivos = arquivos;
+            this.peerIp = peerIp;
+            this.peerPort = peerPort;
         }
 
         public String getNomePeer() {

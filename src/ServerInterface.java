@@ -1,11 +1,12 @@
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.rmi.server.ServerNotActiveException;
 import java.util.List;
 
 public interface ServerInterface extends Remote {
-    String join(String peerName, List<String> files) throws RemoteException;
+    String join(String nomePeer, String ipPeer, int portPeer, List<String> arquivos) throws RemoteException, ServerNotActiveException;
 
-    List<Servidor.PeerInf> search(String filename) throws RemoteException;
+    List<String> search(String filename) throws RemoteException;
 
     String update(String peerName, String filename) throws RemoteException;
 }
