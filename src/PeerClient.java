@@ -5,7 +5,10 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.ServerNotActiveException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Scanner;
 
 public class PeerClient {
 
@@ -15,50 +18,6 @@ public class PeerClient {
     private String folderName;
     private List<String> fileNames;
     private String requestedFile;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public String getIp() {
-        return ip;
-    }
-
-    public void setIp(String ip) {
-        this.ip = ip;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public String getFolderName() {
-        return folderName;
-    }
-
-    public void setFolderName(String folderName) {
-        this.folderName = folderName;
-    }
-
-    public List<String> getFileNames() {
-        return fileNames;
-    }
-
-    public void setFileNames(List<String> fileNames) {
-        this.fileNames = fileNames;
-    }
-
-    public String getRequestedFile() {
-        return requestedFile;
-    }
 
     public static final int REGISTRY_PORT_NUMBER_DEFAULT = 1099;
 
@@ -107,7 +66,7 @@ public class PeerClient {
                         requisicaoSearch(peerClient, servidor);
                         break;
                     case 3:
-                        requisicaoDownload(peerClient);
+                        requisicaoDownload(peerClient, servidor);
                         break;
                 }
             } while (valor != -1);
@@ -117,7 +76,7 @@ public class PeerClient {
         }
     }
 
-    private static void requisicaoDownload(PeerClient peerClient) {
+    private static void requisicaoDownload(PeerClient peerClient, ServerInterface servidor) {
         try {
             Scanner scanner = new Scanner(System.in);
             System.out.print("Digite o IP do peer de destino: ");
@@ -136,7 +95,9 @@ public class PeerClient {
 
             // Prepara para receber o arquivo do peer de destino
             InputStream inputStream = socket.getInputStream();
-            FileOutputStream fileOutputStream = new FileOutputStream(peerClient.getRequestedFile());
+
+            String filePath = peerClient.getFolderName() + File.separator + peerClient.getRequestedFile();
+            FileOutputStream fileOutputStream = new FileOutputStream(filePath);
 
             // Recebe o arquivo e escreve no disco
             byte[] buffer = new byte[4096];
@@ -152,7 +113,7 @@ public class PeerClient {
             outputStream.close();
             socket.close();
 
-            System.out.println("Download concluído com sucesso!");
+            servidor.update(peerClient.name, peerClient.getRequestedFile());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -230,6 +191,7 @@ public class PeerClient {
             this.port = port;
             this.folderName = folderName;
         }
+
         @Override
         public void run() {
             try {
@@ -285,13 +247,56 @@ public class PeerClient {
                 outputStream.close();
                 socket.close();
 
-                System.out.println("Download do arquivo '" + requestedFile + "' concluído");
 
             } catch (IOException e) {
                 e.printStackTrace();
                 System.out.println("Erro durante o download do arquivo.");
             }
         }
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getIp() {
+        return ip;
+    }
+
+    public void setIp(String ip) {
+        this.ip = ip;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public String getFolderName() {
+        return folderName;
+    }
+
+    public void setFolderName(String folderName) {
+        this.folderName = folderName;
+    }
+
+    public List<String> getFileNames() {
+        return fileNames;
+    }
+
+    public void setFileNames(List<String> fileNames) {
+        this.fileNames = fileNames;
+    }
+
+    public String getRequestedFile() {
+        return requestedFile;
     }
 
 }
