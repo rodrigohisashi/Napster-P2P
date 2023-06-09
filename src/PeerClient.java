@@ -18,7 +18,7 @@ public class PeerClient {
     private String folderName;
     private List<String> fileNames;
     private String requestedFile;
-
+    // TEST
     public static final int REGISTRY_PORT_NUMBER_DEFAULT = 1099;
 
     public static final String REGISTRY_IP_DEFAULT = "127.0.0.1";
