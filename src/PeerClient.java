@@ -12,68 +12,71 @@ import java.util.Scanner;
 
 public class PeerClient {
 
-    private String name;
     private String ip;
     private int port;
     private String folderName;
     private List<String> fileNames;
     private String requestedFile;
-    // TEST
+    private final String peerAdress;
     public static final int REGISTRY_PORT_NUMBER_DEFAULT = 1099;
-
+    public static final int BUFFER_SIZE = 4096;
     public static final String REGISTRY_IP_DEFAULT = "127.0.0.1";
 
     public void setRequestedFile(String requestedFile) {
         this.requestedFile = requestedFile;
     }
 
-    public PeerClient(String name, String ip, int port, String folderName, List<String> fileNames) {
-        this.name = name;
+    public PeerClient(String ip, int port, String folderName, List<String> fileNames) {
         this.ip = ip;
         this.port = port;
         this.folderName = folderName;
         this.fileNames = fileNames;
+        this.peerAdress = ip + ":" + port;
     }
 
     public static void main(String[] args) {
         try {
             PeerClient peerClient = createPeerClient();
 
-            handlerNewDownloadRequestThread downloadServer = new handlerNewDownloadRequestThread(peerClient.getPort(), peerClient.getFolderName());
+            HandlerNewDownloadRequestThread handlerNewDownloadRequestThread = new HandlerNewDownloadRequestThread(peerClient.getPort(), peerClient.getFolderName());
+
             // Inicia o servidor de download em uma nova thread
-            Thread serverThread = new Thread(downloadServer);
+            Thread serverThread = new Thread(handlerNewDownloadRequestThread);
             serverThread.start();
 
             Registry registry = LocateRegistry.getRegistry(REGISTRY_IP_DEFAULT, REGISTRY_PORT_NUMBER_DEFAULT);
             ServerInterface servidor = (ServerInterface) registry.lookup("server");
 
             adicionarArquivosAoPeer(peerClient);
-
-            Scanner scanner = new Scanner(System.in);
-            int valor;
-            do {
-                System.out.println("---- Menu Peer ----");
-                System.out.println("1 - Join");
-                System.out.println("2 - Search");
-                System.out.println("3 - Download");
-                System.out.print("Digite um número (-1 para sair): ");
-                valor = scanner.nextInt();
-                switch (valor) {
-                    case 1:
-                        requisicaoJoin(peerClient, servidor);
-                        break;
-                    case 2:
-                        requisicaoSearch(peerClient, servidor);
-                        break;
-                    case 3:
-                        requisicaoDownload(peerClient, servidor);
-                        break;
-                }
-            } while (valor != -1);
+            menuInterativoPeer(peerClient, servidor);
 
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static void menuInterativoPeer(PeerClient peerClient, ServerInterface servidor) throws RemoteException, ServerNotActiveException {
+        Scanner scanner = new Scanner(System.in);
+        int valor;
+        do {
+            System.out.println("---- Menu Peer ----");
+            System.out.println("1 - Join");
+            System.out.println("2 - Search");
+            System.out.println("3 - Download");
+            System.out.print("Digite um número (-1 para sair): ");
+            valor = scanner.nextInt();
+            switch (valor) {
+                case 1:
+                    requisicaoJoin(peerClient, servidor);
+                    break;
+                case 2:
+                    requisicaoSearch(peerClient, servidor);
+                    break;
+                case 3:
+                    requisicaoDownload(peerClient, servidor);
+                    break;
+            }
+        } while (valor != -1);
     }
 
     private static void requisicaoDownload(PeerClient peerClient, ServerInterface servidor) {
@@ -85,7 +88,11 @@ public class PeerClient {
             System.out.print("Digite a porta do peer de destino: ");
             int peerPort = scanner.nextInt();
 
-            // Cria uma conexão TCP com o peer de destino
+            if (peerClient.getPeerAdress() == null || peerClient.getPeerAdress().isEmpty()) {
+                System.out.print("Digite o arquivo para ser baixado: ");
+                peerClient.setRequestedFile(scanner.nextLine().trim());
+            }
+            // Cria uma conexão TCP
             Socket socket = new Socket(peerIp, peerPort);
 
             // Envia a requisição de download para o peer de destino
@@ -100,7 +107,7 @@ public class PeerClient {
             FileOutputStream fileOutputStream = new FileOutputStream(filePath);
 
             // Recebe o arquivo e escreve no disco
-            byte[] buffer = new byte[4096];
+            byte[] buffer = new byte[BUFFER_SIZE];
             int bytesRead;
             while ((bytesRead = inputStream.read(buffer)) != -1) {
                 fileOutputStream.write(buffer, 0, bytesRead);
@@ -113,7 +120,9 @@ public class PeerClient {
             outputStream.close();
             socket.close();
 
-            servidor.update(peerClient.name, peerClient.getRequestedFile());
+            System.out.println("Arquivo " + peerClient.getRequestedFile() + " baixado com sucesso na pasta " + peerClient.getFolderName());
+
+            servidor.update(peerClient.getPeerAdress(), peerClient.getRequestedFile());
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -121,19 +130,19 @@ public class PeerClient {
         }
     }
 
-    private static void requisicaoSearch(PeerClient peerClient, ServerInterface servidor) throws RemoteException {
+    private static void requisicaoSearch(PeerClient peerClient, ServerInterface servidor) throws RemoteException, ServerNotActiveException {
         Scanner scanner = new Scanner(System.in);
         System.out.print("Digite o nome do arquivo para procurar: ");
         String fileName = scanner.nextLine().trim();
 
-        List<String> searchResponse = servidor.search(fileName);
+        List<String> searchResponse = servidor.search(peerClient.getPeerAdress(), fileName);
 
         System.out.println("peers com arquivo solicitado: " + searchResponse.toString());
         peerClient.setRequestedFile(fileName);
     }
 
     private static void requisicaoJoin(PeerClient peerClient, ServerInterface servidor) throws RemoteException, ServerNotActiveException {
-        String joinResponse = servidor.join(peerClient.name, peerClient.ip, peerClient.port, peerClient.fileNames);
+        String joinResponse = servidor.join(peerClient.ip, peerClient.port, peerClient.fileNames);
         if (joinResponse.equals("JOIN_OK")) {
             System.out.println("Sou peer " + peerClient.ip + ":" + peerClient.port + " com arquivos: " + peerClient.fileNames.toString());
         } else {
@@ -162,10 +171,7 @@ public class PeerClient {
         System.out.print("Insira a pasta: ");
         String folderName = scanner.nextLine().trim();
 
-        System.out.print("Insira o nome do peer: ");
-        String name = scanner.nextLine().trim();
-
-        return new PeerClient(name, serverIp, serverPort, folderName, new ArrayList<>());
+        return new PeerClient(serverIp, serverPort, folderName, new ArrayList<>());
     }
 
     public static void adicionarArquivosAoPeer(PeerClient peerClient) {
@@ -183,11 +189,11 @@ public class PeerClient {
     }
 
 
-    private static class handlerNewDownloadRequestThread implements Runnable {
+    private static class HandlerNewDownloadRequestThread implements Runnable {
         private int port;
         private String folderName;
 
-        public handlerNewDownloadRequestThread(int port, String folderName) {
+        public HandlerNewDownloadRequestThread(int port, String folderName) {
             this.port = port;
             this.folderName = folderName;
         }
@@ -196,11 +202,10 @@ public class PeerClient {
         public void run() {
             try {
                 ServerSocket serverSocket = new ServerSocket(port);
-                System.out.println("Servidor de download iniciado na porta " + port);
 
                 while (true) {
                     Socket socket = serverSocket.accept();
-                    System.out.println("Nova solicitação de download recebida");
+                    //Nova solicitação de download recebida
 
                     Thread downloadThread = new Thread(new DownloadThread(socket, folderName));
                     downloadThread.start();
@@ -255,14 +260,6 @@ public class PeerClient {
         }
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getIp() {
         return ip;
     }
@@ -273,6 +270,11 @@ public class PeerClient {
 
     public int getPort() {
         return port;
+    }
+
+
+    public String getPeerAdress() {
+        return peerAdress;
     }
 
     public void setPort(int port) {

@@ -49,31 +49,35 @@ public class Servidor implements ServerInterface {
     }
 
     @Override
-    public String join(String nomePeer, String ipPeer, int portPeer, List<String> arquivos) throws RemoteException, ServerNotActiveException {
-        if (peers.containsKey(nomePeer)) {
+    public String join(String ipPeer, int portPeer, List<String> arquivos) throws RemoteException, ServerNotActiveException {
+        String ipAndPortPeer = ipPeer + ':' + portPeer;
+        if (peers.containsKey(ipAndPortPeer)) {
             return "JOIN_ERROR: Peer já cadastrado";
         }
-        PeerInf novoPeer = new PeerInf(nomePeer, ipPeer, portPeer, arquivos);
-        peers.put(nomePeer, novoPeer);
+        PeerInf novoPeer = new PeerInf(ipPeer, portPeer, arquivos);
+        peers.put(ipAndPortPeer, novoPeer);
         System.out.println("Peer " + ipPeer + ":" + portPeer + " adicionado com arquivos " + arquivos.toString());
         return "JOIN_OK";
     }
 
     @Override
-    public List<String> search(String filename) throws RemoteException {
+    public List<String> search(String peerAdress, String filename) throws RemoteException, ServerNotActiveException {
         List<String> ipsPeersWithFile = new ArrayList<>();
         for (PeerInf peer : peers.values()) {
             if (peer.getArquivos().contains(filename)) {
-                ipsPeersWithFile.add(peer.peerIp + ":" +  peer.peerPort);
+                ipsPeersWithFile.add(peer.peerIp + ":" + peer.peerPort);
             }
         }
+
+        System.out.println("Peer " + peerAdress + " solicitou arquivo " + filename);
+
         return ipsPeersWithFile;
     }
 
     @Override
-    public String update(String peerName, String filename) throws RemoteException {
-        if (peers.containsKey(peerName)) {
-            PeerInf peerCadastrado = peers.get(peerName);
+    public String update(String peerAdress, String filename) throws RemoteException {
+        if (peers.containsKey(peerAdress)) {
+            PeerInf peerCadastrado = peers.get(peerAdress);
             if (peerCadastrado.getArquivos().contains(filename)) {
                 return "UPDATE ERROR: FILENAME ALREADY EXISTS!";
             } else {
@@ -86,22 +90,14 @@ public class Servidor implements ServerInterface {
     }
 
     public class PeerInf implements Serializable {
-        private String nomePeer;
-
         private String peerIp;
-
         private int peerPort;
         private List<String> arquivos;
 
-        public PeerInf(String nomePeer, String peerIp, int peerPort, List<String> arquivos) {
-            this.nomePeer = nomePeer;
+        public PeerInf(String peerIp, int peerPort, List<String> arquivos) {
             this.arquivos = arquivos;
             this.peerIp = peerIp;
             this.peerPort = peerPort;
-        }
-
-        public String getNomePeer() {
-            return nomePeer;
         }
 
         public List<String> getArquivos() {
