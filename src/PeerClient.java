@@ -92,39 +92,48 @@ public class PeerClient {
                 System.out.print("Digite o arquivo para ser baixado: ");
                 peerClient.setRequestedFile(scanner.nextLine().trim());
             }
-            // Cria uma conexão TCP
-            Socket socket = new Socket(peerIp, peerPort);
 
-            // Envia a requisição de download para o peer de destino
-            OutputStream outputStream = socket.getOutputStream();
-            DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
-            dataOutputStream.writeUTF(peerClient.getRequestedFile());
+            Thread downloadThread = new Thread(() -> {
+                try {
+                    // Cria uma conexão TCP
+                    Socket socket = new Socket(peerIp, peerPort);
 
-            // Prepara para receber o arquivo do peer de destino
-            InputStream inputStream = socket.getInputStream();
+                    // Envia a requisição de download
+                    OutputStream outputStream = socket.getOutputStream();
+                    DataOutputStream dataOutputStream = new DataOutputStream(outputStream);
+                    dataOutputStream.writeUTF(peerClient.getRequestedFile());
 
-            String filePath = peerClient.getFolderName() + File.separator + peerClient.getRequestedFile();
-            FileOutputStream fileOutputStream = new FileOutputStream(filePath);
+                    // Prepara para receber o arquivo
+                    InputStream inputStream = socket.getInputStream();
 
-            // Recebe o arquivo e escreve no disco
-            byte[] buffer = new byte[BUFFER_SIZE];
-            int bytesRead;
-            while ((bytesRead = inputStream.read(buffer)) != -1) {
-                fileOutputStream.write(buffer, 0, bytesRead);
-            }
+                    String filePath = peerClient.getFolderName() + File.separator + peerClient.getRequestedFile();
+                    FileOutputStream fileOutputStream = new FileOutputStream(filePath);
 
-            // Fecha as conexões e recursos
-            fileOutputStream.close();
-            inputStream.close();
-            dataOutputStream.close();
-            outputStream.close();
-            socket.close();
+                    // Recebe o arquivo e escreve
+                    byte[] buffer = new byte[BUFFER_SIZE];
+                    int bytesRead;
+                    while ((bytesRead = inputStream.read(buffer)) != -1) {
+                        fileOutputStream.write(buffer, 0, bytesRead);
+                    }
 
-            System.out.println("Arquivo " + peerClient.getRequestedFile() + " baixado com sucesso na pasta " + peerClient.getFolderName());
+                    fileOutputStream.close();
+                    inputStream.close();
+                    dataOutputStream.close();
+                    outputStream.close();
+                    socket.close();
 
-            servidor.update(peerClient.getPeerAdress(), peerClient.getRequestedFile());
+                    System.out.println("Arquivo " + peerClient.getRequestedFile() + " baixado com sucesso na pasta " + peerClient.getFolderName());
 
-        } catch (IOException e) {
+                    servidor.update(peerClient.getPeerAdress(), peerClient.getRequestedFile());
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            // Inicia a thread de download
+            downloadThread.start();
+
+        } catch (Exception e) {
             e.printStackTrace();
             System.out.println("Erro durante o download do arquivo.");
         }
