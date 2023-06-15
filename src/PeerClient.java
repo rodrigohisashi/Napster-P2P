@@ -88,7 +88,7 @@ public class PeerClient {
             System.out.print("Digite a porta do peer de destino: ");
             int peerPort = scanner.nextInt();
 
-            if (peerClient.getPeerAdress() == null || peerClient.getPeerAdress().isEmpty()) {
+            if (peerClient.getRequestedFile() == null || peerClient.getRequestedFile().isEmpty()) {
                 System.out.print("Digite o arquivo para ser baixado: ");
                 peerClient.setRequestedFile(scanner.nextLine().trim());
             }
@@ -194,7 +194,7 @@ public class PeerClient {
                 }
             }
         }
-        System.out.println(Arrays.toString(arquivos));
+
     }
 
 
@@ -254,7 +254,7 @@ public class PeerClient {
                     outputStream.write(buffer, 0, bytesRead);
                 }
 
-                // Fecha as conexões e recursos
+                // Fecha as conexões
                 fileInputStream.close();
                 dataInputStream.close();
                 inputStream.close();

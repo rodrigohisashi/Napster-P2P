@@ -41,15 +41,15 @@ public class Servidor implements ServerInterface {
         }
         Servidor server = new Servidor();
 
+        // Criação do Servidor + Registry
         ServerInterface stub = (ServerInterface) UnicastRemoteObject.exportObject(server, 0);
         LocateRegistry.createRegistry(registryPortNumber);
         Registry registry = LocateRegistry.getRegistry(registryIP, registryPortNumber);
         registry.rebind("server", stub);
-        System.out.println("Servidor INICIADO");
     }
 
     @Override
-    public String join(String ipPeer, int portPeer, List<String> arquivos) throws RemoteException, ServerNotActiveException {
+    public String join(String ipPeer, int portPeer, List<String> arquivos) throws RemoteException {
         String ipAndPortPeer = ipPeer + ':' + portPeer;
         if (peers.containsKey(ipAndPortPeer)) {
             return "JOIN_ERROR: Peer já cadastrado";
@@ -61,7 +61,7 @@ public class Servidor implements ServerInterface {
     }
 
     @Override
-    public List<String> search(String peerAdress, String filename) throws RemoteException, ServerNotActiveException {
+    public List<String> search(String peerAdress, String filename) throws RemoteException {
         List<String> ipsPeersWithFile = new ArrayList<>();
         for (PeerInf peer : peers.values()) {
             if (peer.getArquivos().contains(filename)) {
