@@ -78,6 +78,7 @@ public class Servidor implements ServerInterface {
     public String update(String peerAdress, String filename) throws RemoteException {
         if (peers.containsKey(peerAdress)) {
             PeerInf peerCadastrado = peers.get(peerAdress);
+            // faz a busca nos arquivos para ver se ja existe caso contrario adiciona na pasta
             if (peerCadastrado.getArquivos().contains(filename)) {
                 return "UPDATE ERROR: FILENAME ALREADY EXISTS!";
             } else {

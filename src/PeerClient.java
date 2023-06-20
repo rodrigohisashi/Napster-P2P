@@ -186,7 +186,7 @@ public class PeerClient {
     public static void adicionarArquivosAoPeer(PeerClient peerClient) {
         File pasta = new File(peerClient.folderName);
         File[] arquivos = pasta.listFiles();
-
+        // verifica os arquivos de dentro da pasta e adiciona na lista de arquivos
         if (arquivos != null) {
             for (File arquivo : arquivos) {
                 if (arquivo.isFile()) {
