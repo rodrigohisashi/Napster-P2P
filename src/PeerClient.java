@@ -63,7 +63,7 @@ public class PeerClient {
             System.out.println("1 - Join");
             System.out.println("2 - Search");
             System.out.println("3 - Download");
-            System.out.print("Digite um número (-1 para sair): ");
+            System.out.print("Digite um numero (-1 para sair): ");
             valor = scanner.nextInt();
             switch (valor) {
                 case 1:
